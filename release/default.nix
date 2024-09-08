@@ -265,7 +265,7 @@ let
       };
 
   channelsUpstream =
-    lib.mapAttrs (name: src:
+    lib.mapAttrsToList (name: src:
     let
       fullName =
         if (parseDrvName name).version != ""
@@ -283,26 +283,27 @@ let
     })
     (removeAttrs upstreamSources [ "allUpstreams" ]);
 
-  channels = channelsUpstream // {
-    # The attribut ename `fc` if important because if channel is added without
-    # an explicit name argument, it will be available as <fc>.
-    fc = with lib; pkgs.releaseTools.channel {
-      name = "fc-${version}${versionSuffix}";
-      constituents = [ fcSrc ];
-      src = fcSrc;
-      patchPhase = ''
-        echo -n "${fc.rev}" > .git-revision
-        echo -n "${versionSuffix}" > .version-suffix
-        echo -n "${version}" > .version
-      '';
-      passthru.channelName = "fc";
-      meta = {
-        description = "Main channel of the <fc> overlay";
-        homepage = "https://flyingcircus.io/doc/";
-        license = [ licenses.bsd3 ];
-        maintainer = with maintainers; [ ckauhaus ];
-      };
+  fcChannel = with lib; pkgs.releaseTools.channel {
+    name = "fc-${version}${versionSuffix}";
+    constituents = [ fcSrc ];
+    src = fcSrc;
+    patchPhase = ''
+      echo -n "${fc.rev}" > .git-revision
+      echo -n "${versionSuffix}" > .version-suffix
+      echo -n "${version}" > .version
+    '';
+    passthru.channelName = "fc";
+    meta = {
+      description = "Main channel of the <fc> overlay";
+      homepage = "https://flyingcircus.io/doc/";
+      license = [ licenses.bsd3 ];
     };
+  };
+
+  channels = with lib; pkgs.releaseTools.aggregate {
+    name = "channels";
+    constituents = channelsUpstream ++ [ fcChannel ];
+    meta.description = "only channels, no tests";
   };
 
   images =
@@ -352,6 +353,54 @@ let
 
   };
 
+  mkRelease = { releaseName, constituents ? [ ] }:
+    let
+      name = "${releaseName}-${version}${versionSuffix}";
+      tarOpts = ''
+        --owner=0 --group=0 \
+        --mtime="1970-01-01 00:00:00 UTC" \
+      '';
+
+    in pkgs.releaseTools.channel {
+      inherit constituents;
+      inherit name;
+      src = combinedSources;
+
+      preferLocalBuild = true;
+
+      passthru.src = combinedSources;
+
+      patchPhase = "touch .update-on-nixos-rebuild";
+      installPhase = ''
+        mkdir -p $out/{tarballs,nix-support}
+        tarball=$out/tarballs/nixexprs.tar
+
+        # Add all files in nixos/ including hidden ones.
+        # (-maxdepth 1: don't recurse into subdirs)
+        find nixos/ -maxdepth 1 -type f -exec \
+          tar uf "$tarball" --transform "s|^nixos|${name}|" ${tarOpts} {} \;
+
+        # Add files from linked subdirectories. We want to keep the name of the
+        # link in the archive, not the target. Example:
+        # "nixos/fc/default.nix" becomes "release-23.11.2222.12abcdef/fc/default.nix"
+        for d in nixos/*/; do
+            tar uf "$tarball" --transform "s|^$d\\.|${name}/$(basename "$d")|" ${tarOpts} "$d."
+        done
+
+        # Compress using multiple cores and with "extreme settings" to reduce compressed size.
+        xz -T0 -e "$tarball"
+
+        echo "channel - $out/tarballs/nixexprs.tar.xz" > "$out/nix-support/hydra-build-products"
+        echo $constituents > "$out/nix-support/hydra-aggregate-constituents"
+
+        # Propagate build failures.
+        for i in $constituents; do
+          if [ -e "$i/nix-support/failed" ]; then
+            touch "$out/nix-support/failed"
+          fi
+        done
+      '';
+    };
 in
 
 jobs // {
@@ -359,14 +408,11 @@ jobs // {
   # Helpful for debugging with nix repl -f release/default.nix but should not included as Hydra jobs.
   # inherit excludedPkgNames overlayPkgNames importantPkgNames overlayPkgNamesToTest importantPkgNamesToTest;
 
-  release = with lib; pkgs.releaseTools.channel rec {
-    name = "release-${version}${versionSuffix}";
-    src = combinedSources;
+  release = mkRelease {
+    releaseName = "release";
     constituents = [
-      src
-      "channels.fc"
-      "channels.nixos-mailserver"
-      "channels.nixpkgs"
+      # XXX add globbing
+      "channels"
       "doc.roles"
       "images.dev-vm"
       "images.fc"
@@ -381,6 +427,7 @@ jobs // {
       "importantPackages.bash.x86_64-linux"
       "importantPackages.bind.x86_64-linux"
       "importantPackages.binutils.x86_64-linux"
+      "importantPackages.buildbot.x86_64-linux"
       "importantPackages.bundler.x86_64-linux"
       "importantPackages.cacert.x86_64-linux"
       "importantPackages.calibre.x86_64-linux"
@@ -426,8 +473,6 @@ jobs // {
       "importantPackages.gnumake.x86_64-linux"
       "importantPackages.gnupg.x86_64-linux"
       "importantPackages.go.x86_64-linux"
-      "importantPackages.go_1_21.x86_64-linux"
-      "importantPackages.go_1_22.x86_64-linux"
       "importantPackages.grafana.x86_64-linux"
       "importantPackages.grub2.x86_64-linux"
       "importantPackages.haproxy.x86_64-linux"
@@ -439,16 +484,11 @@ jobs // {
       "importantPackages.jetbrains.jdk.x86_64-linux"
       "importantPackages.jetty.x86_64-linux"
       "importantPackages.jicofo.x86_64-linux"
-      "importantPackages.jitsi-meet.x86_64-linux"
       "importantPackages.jitsi-videobridge.x86_64-linux"
       "importantPackages.jq.x86_64-linux"
       "importantPackages.jre.x86_64-linux"
       "importantPackages.k3s.x86_64-linux"
-      "importantPackages.k3s_1_27.x86_64-linux"
-      "importantPackages.k3s_1_28.x86_64-linux"
-      "importantPackages.k3s_1_29.x86_64-linux"
       "importantPackages.k3s_1_30.x86_64-linux"
-      "importantPackages.k3s_1_31.x86_64-linux"
       "importantPackages.keycloak.x86_64-linux"
       "importantPackages.kubernetes-helm.x86_64-linux"
       "importantPackages.libffi.x86_64-linux"
@@ -462,8 +502,8 @@ jobs // {
       "importantPackages.libxml2.x86_64-linux"
       "importantPackages.libxslt.x86_64-linux"
       "importantPackages.libyaml.x86_64-linux"
-      "importantPackages.linuxKernelStable.x86_64-linux"
-      "importantPackages.linuxKernelVerify.x86_64-linux"
+      "importantPackages.linux.x86_64-linux"
+      "importantPackages.linux_5_15.x86_64-linux"
       "importantPackages.logrotate.x86_64-linux"
       "importantPackages.lz4.x86_64-linux"
       "importantPackages.mailutils.x86_64-linux"
@@ -584,7 +624,6 @@ jobs // {
       "importantPackages.tmux.x86_64-linux"
       "importantPackages.tomcat10.x86_64-linux"
       "importantPackages.tomcat9.x86_64-linux"
-      "importantPackages.unifi8.x86_64-linux"
       "importantPackages.unzip.x86_64-linux"
       "importantPackages.util-linux.x86_64-linux"
       "importantPackages.varnish.x86_64-linux"
@@ -597,12 +636,10 @@ jobs // {
       "importantPackages.xz.x86_64-linux"
       "importantPackages.zip.x86_64-linux"
       "importantPackages.zlib.x86_64-linux"
-      "importantPackages.zoneminder.x86_64-linux"
       "importantPackages.zsh.x86_64-linux"
       "importantPackages.zstd.x86_64-linux"
       "pkgs.apacheHttpdLegacyCrypt.x86_64-linux"
       "pkgs.auditbeat7-oss.x86_64-linux"
-      "pkgs.auditbeat7.x86_64-linux"
       "pkgs.boost159.x86_64-linux"
       "pkgs.busybox.x86_64-linux"
       "pkgs.certmgr.x86_64-linux"
@@ -633,7 +670,6 @@ jobs // {
       "pkgs.fc.telegraf-collect-psi.x86_64-linux"
       "pkgs.fc.userscan.x86_64-linux"
       "pkgs.filebeat7-oss.x86_64-linux"
-      "pkgs.filebeat7.x86_64-linux"
       "pkgs.innotop.x86_64-linux"
       "pkgs.kubernetes-dashboard-metrics-scraper.x86_64-linux"
       "pkgs.kubernetes-dashboard.x86_64-linux"
@@ -664,12 +700,10 @@ jobs // {
       "pkgs.percona-toolkit.x86_64-linux"
       "pkgs.percona-xtrabackup_2_4.x86_64-linux"
       "pkgs.percona-xtrabackup_8_3.x86_64-linux"
-      "pkgs.percona-xtrabackup_8_4.x86_64-linux"
       "pkgs.percona.x86_64-linux"
       "pkgs.percona57.x86_64-linux"
       "pkgs.percona80.x86_64-linux"
       "pkgs.percona83.x86_64-linux"
-      "pkgs.percona84.x86_64-linux"
       "pkgs.php72.x86_64-linux"
       "pkgs.php73.x86_64-linux"
       "pkgs.php74.x86_64-linux"
@@ -679,14 +713,12 @@ jobs // {
       "pkgs.php83.x86_64-linux"
       "pkgs.pkgconfig.x86_64-linux"
       "pkgs.postfix.x86_64-linux"
-      "pkgs.postgis_2_5.x86_64-linux"
       "pkgs.prometheus-elasticsearch-exporter.x86_64-linux"
       "pkgs.pypolicyd-spf.x86_64-linux"
       "pkgs.python27.x86_64-linux"
       "pkgs.rabbitmq-server_3_8.x86_64-linux"
       "pkgs.rich-cli.x86_64-linux"
       "pkgs.solr.x86_64-linux"
-      "pkgs.temporal_tables.x86_64-linux"
       "pkgs.xtrabackup.x86_64-linux"
       "tests.antivirus"
       "tests.audit"
@@ -747,7 +779,6 @@ jobs // {
       "tests.openvpn"
       "tests.percona80"
       "tests.percona83"
-      "tests.percona84"
       "tests.physical-installer"
       "tests.postgresql-autoupgrade.automatic"
       "tests.postgresql-autoupgrade.manual"
@@ -773,45 +804,34 @@ jobs // {
       "tests.vxlan"
       "tests.webproxy"
     ];
-    preferLocalBuild = true;
-
-    passthru.src = combinedSources;
-
-    patchPhase = "touch .update-on-nixos-rebuild";
-
-    tarOpts = ''
-      --owner=0 --group=0 \
-      --mtime="1970-01-01 00:00:00 UTC" \
-    '';
-
-    installPhase = ''
-      mkdir -p $out/{tarballs,nix-support}
-      tarball=$out/tarballs/nixexprs.tar
-
-      # Add all files in nixos/ including hidden ones.
-      # (-maxdepth 1: don't recurse into subdirs)
-      find nixos/ -maxdepth 1 -type f -exec \
-        tar uf "$tarball" --transform "s|^nixos|${name}|" ${tarOpts} {} \;
-
-      # Add files from linked subdirectories. We want to keep the name of the
-      # link in the archive, not the target. Example:
-      # "nixos/fc/default.nix" becomes "release-23.11.2222.12abcdef/fc/default.nix"
-      for d in nixos/*/; do
-          tar uf "$tarball" --transform "s|^$d\\.|${name}/$(basename "$d")|" ${tarOpts} "$d."
-      done
-
-      # Compress using multiple cores and with "extreme settings" to reduce compressed size.
-      xz -T0 -e "$tarball"
-
-      echo "channel - $out/tarballs/nixexprs.tar.xz" > "$out/nix-support/hydra-build-products"
-      echo $constituents > "$out/nix-support/hydra-aggregate-constituents"
-
-      # Propagate build failures.
-      for i in $constituents; do
-        if [ -e "$i/nix-support/failed" ]; then
-          touch "$out/nix-support/failed"
-        fi
-      done
-    '';
   };
+
+  releaseUntested = mkRelease {
+    releaseName = "releaseUntested";
+  };
+
+  releaseSmall = mkRelease {
+    releaseName = "releaseSmall";
+    constituents = [ 
+      "channels"
+      # "Basic tests required for all machines are green.";
+      "jobs.tests.audit"
+      "jobs.tests.collect-garbage"
+      "jobs.tests.fcagent"
+      "jobs.tests.filebeat"
+      "jobs.tests.kernelconfig"
+      "jobs.tests.locale"
+      "jobs.tests.login"
+      "jobs.tests.logrotate"
+      "jobs.tests.sensuclient"
+      "jobs.tests.sudo"
+      "jobs.tests.syslog.plain"
+      "jobs.tests.systemd-service-cycles"
+      "jobs.tests.users"
+      "jobs.tests.network.firewall"
+      "jobs.tests.network.loopback"
+      "jobs.tests.network.name-resolution"
+      "jobs.tests.network.ping-vlans"
+     ]; };
 }
+

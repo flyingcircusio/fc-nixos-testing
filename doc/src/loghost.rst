@@ -28,7 +28,7 @@ API public, you need to add :ref:`custom Nix config <nixos-custom-modules>`:
   }
 
 Without that setting, Graylog UI and API can only be accessed via the
-:ref:`SRV network interface <logical_networks>`, by other machines in the same
+SRV network interface, by other machines in the same
 project or via :ref:`VPN <nixos-external_net>`.
 
 
@@ -124,10 +124,10 @@ Nginx
 ~~~~~
 
 Nginx provides SSL termination if the public frontend is enabled.
-Nginx listens on port 80 and 443 on the :ref:`FE interface <logical_networks>`
+Nginx listens on port 80 and 443 on the FE interface
 in that case. Certificates are renewed automatically using Let's Encrypt.
 
-Port TCP 9002 on the :ref:`SRV interface <logical_networks>` is always available
+Port TCP 9002 on the SRV interface is always available
 and provided for machines in the same project which need to access the Graylog
 API directly without authentication.
 

@@ -88,16 +88,6 @@ htmlhelp_basename = "flyingcircus"
 
 # -- Options for extensions ----------------------------------------------------
 
-platform_doc = os.environ.get("platformDoc")
-if platform_doc == "" or platform_doc == "null":
-    platform_doc = None
-elif platform_doc is not None:
-    platform_doc += "/objects.inv"
-
-intersphinx_mapping = {
-    "platform": ("https://doc.flyingcircus.io/platform", platform_doc)
-}
-
 
 def setup(app):
     app.add_css_file("flyingcircus.css")

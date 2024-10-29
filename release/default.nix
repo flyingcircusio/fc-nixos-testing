@@ -11,12 +11,6 @@
     rev = "0000000000000000000000000000000000000000";
     shortRev = "0000000";
   }
-, platformDoc ? {
-    outPath = null;
-    revCount = 0;
-    shortRev = "0000000";
-    gitTag = "master";
-  }
 , scrubJobs ? true  # Strip most of attributes when evaluating
 }:
 
@@ -135,29 +129,12 @@ let
   testPkgs =
     listToAttrs (map (n: { name = n; value = pkgs.${n}; }) testPkgNames);
 
-  dummyPlatformDoc = pkgs.stdenv.mkDerivation {
-    name = "dummy-platform-doc";
-    # creates nothing but an empty objects.inv to enable independent builds
-    unpackPhase = ":";
-    installPhase = ''
-      mkdir $out
-    '';
-  };
-
-  mkPlatformDoc = path: (import "${path}/release.nix" {
-    inherit pkgs;
-    src = platformDoc;
-  }).platformDoc;
-
-  platformDoc' = lib.mapNullable mkPlatformDoc platformDoc.outPath;
-
   platformRoleDoc =
   let
     html = import ../doc {
       inherit pkgs;
       branch = if branch != null then branch else "fc-${version}";
       updated = "${toString fc.revCount}.${shortRev}";
-      platformDoc = platformDoc';
       failOnWarnings = true;
     };
   in lib.hydraJob (
@@ -169,7 +146,7 @@ let
     ''
   );
 
-  doc = { platform = platformDoc'; roles = platformRoleDoc; };
+  doc = { roles = platformRoleDoc; };
 
   jobs = {
     pkgs = mapTestOn (packagePlatforms testPkgs);

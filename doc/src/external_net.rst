@@ -24,7 +24,7 @@ VxLAN
 ~~~~~
 
 The external network gateway contains also provisions to interconnect the local
-RG with a remote network via VxLAN_. Contact the :ref:`support` for details.
+RG with a remote network via VxLAN_. Contact the support for details.
 
 mosh
 ~~~~
@@ -42,7 +42,7 @@ OpenVPN
 ~~~~~~~
 
 An OpenVPN server needs correct DNS settings (forward and reverse names).
-Contact the :ref:`support` to get this set up. Additional options (like address
+Contact the support to get this set up. Additional options (like address
 pools) can be set in :file:`/etc/local/openvpn/networks.json`. The README file
 in the same directory contains a detailed description of available options.
 

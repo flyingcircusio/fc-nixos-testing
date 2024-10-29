@@ -11,7 +11,7 @@ Configuration
 
 Out of the box, Memcached is set up with a couple of common default
 parameters and listens on *localhost* and the IP-addresses of the
-*ethsrv*-interface of your VM (See :ref:`networking` for details on this topic).
+*ethsrv*-interface of your VM (See networking for details on this topic).
 
 If you need to change the behaviour of Memcached, you have to put the
 changed options into a JSON file and save it

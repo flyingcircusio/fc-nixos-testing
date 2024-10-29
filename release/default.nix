@@ -11,7 +11,6 @@
     rev = "0000000000000000000000000000000000000000";
     shortRev = "0000000";
   }
-, docObjectsInventory ? null
 , scrubJobs ? true  # Strip most of attributes when evaluating
 }:
 
@@ -158,7 +157,7 @@ let
   platformRoleDoc =
   let
     html = import ../doc {
-      inherit pkgs docObjectsInventory;
+      inherit pkgs;
       branch = if branch != null then branch else "fc-${version}";
       updated = "${toString fc.revCount}.${shortRev}";
       failOnWarnings = true;

@@ -8,7 +8,7 @@ version, what to consider and where to take action before upgrading.
 :::{note}
 Before upgrading a machine, please read the {ref}`nixos-upgrade-general`
 and {ref}`nixos-upgrade-breaking`.
-Contact our {ref}`support` for upgrade assistance.
+Contact our support for upgrade assistance.
 :::
 
 (nixos-upgrade-overview)=
@@ -42,7 +42,7 @@ and only critical bug fixes are back-ported to older versions.
 ## How to upgrade?
 
 At the moment, upgrading for customers is only possible by setting the
-platform version using the API. Ask our {ref}`support` to schedule an
+platform version using the API. Ask our support to schedule an
 upgrade in a maintenance window or upgrade immediately if you don't use the
 API.
 

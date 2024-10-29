@@ -11,7 +11,6 @@
     rev = "0000000000000000000000000000000000000000";
     shortRev = "0000000";
   }
-, docObjectsInventory ? null
 , scrubJobs ? true  # Strip most of attributes when evaluating
 }:
 
@@ -156,7 +155,7 @@ let
   platformRoleDoc =
   let
     html = import ../doc {
-      inherit pkgs docObjectsInventory;
+      inherit pkgs;
       branch = if branch != null then branch else "fc-${version}";
       updated = "${toString fc.revCount}.${shortRev}";
       failOnWarnings = true;
@@ -680,7 +679,6 @@ jobs // {
       "pkgs.tideways_daemon.x86_64-linux"
       "pkgs.tideways_module.x86_64-linux"
       "pkgs.xtrabackup.x86_64-linux"
-      "tested"
       "tests.antivirus"
       "tests.audit"
       "tests.collect-garbage"
@@ -688,8 +686,6 @@ jobs // {
       "tests.devhost"
       "tests.docker"
       "tests.fcagent"
-      "tests.fcagent.nonprod"
-      "tests.fcagent.prod"
       "tests.ferretdb"
       "tests.ffmpeg"
       "tests.filebeat"

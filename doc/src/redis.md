@@ -13,7 +13,7 @@ in the latest version provided by NixOS which is 7.2.x at the moment.
 
 Out of the box, Redis is set up with a couple of common default
 parameters and listens on the IP-addresses of the *loopback* (localhost) and
-*ethsrv*-interfaces of your VM on port 6379 (See {ref}`networking`
+*ethsrv*-interfaces of your VM on port 6379 (See networking
 for details on this topic).
 
 In previous versions, custom redis configuration could be set

@@ -161,11 +161,10 @@ $ kubectl get nodes
 
 ## Networking
 
-Our Kubernetes cluster uses `flannel` with the `host-gw` backend. Nodes
-interact with each other on the {external+doc:ref}`SRV network
-<logical-networks>` and create an overlay network automatically. VMs with
-specialized roles (`k3s-server`, `k3s-agent` and the `webgateway`) have full
-access to the overlay network.
+Our Kubernetes cluster uses `flannel` with the `host-gw` backend. Nodes interact
+with each other on the SRV network and create an overlay network automatically.
+VMs with specialized roles (`k3s-server`, `k3s-agent` and the `webgateway`)
+have full access to the overlay network.
 
 ### Interaction with non-Kubernetes services
 
@@ -214,7 +213,7 @@ The setup in Kubernetes looks like this:
 
 On the platform side, we have:
 
-- Nginx listening on the public {external+doc:ref}`FE interface <logical-networks>`,
+- Nginx listening on the public FE interface,
   terminating SSL connections and doing the virtual host association.
 - HAProxy listening on *localhost*, running in HTTP mode, discovering pod IPs
   for the headless service via DNS and load balancing between pods.
@@ -280,8 +279,8 @@ to generate backends that are dynamically populated with the pod IPs
 automatically when you add/remove pods. By default, up to 10 pods are used by
 HAProxy. You can change the `maxExpectedPods` setting described below.
 
-See {ref}`webgateway` for more details about general HAProxy and nginx
-configuration.
+See the webgateway role documentation for more details about general HAProxy and
+nginx configuration.
 
 
 #### Scenario 2: TCP passed to an internal ingress controller
@@ -301,7 +300,7 @@ The setup in Kubernetes looks like this:
 On the platform side, we have:
 
 - HAProxy in *tcp* mode, listening on the public
-  {external+doc:ref}`FE interface <logical-networks>`, forwarding requests
+  FE interface, forwarding requests
   from the Internet to Kubernetes ingress.
 
 

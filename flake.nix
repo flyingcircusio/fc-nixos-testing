@@ -140,6 +140,7 @@
 
             packages = with pkgs; [
               jq
+              scriv
             ] ++ (with self'.packages; [
               fcBranchDiffRelease
               fcGetCurrentChannelUrl

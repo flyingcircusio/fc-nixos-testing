@@ -22,7 +22,7 @@
         },
         "generator": {
             "type": "git",
-            "value": "https://github.com/ctheune/hydra-github-jobsets-generator.git try-pr-refname-instead-of-sha",
+            "value": "https://github.com/ctheune/hydra-github-jobsets-generator.git refname-http-urls",
             "emailresponsible": false
         },
         "nixpkgs": {

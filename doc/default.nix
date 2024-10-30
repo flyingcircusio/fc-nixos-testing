@@ -3,16 +3,11 @@
 # Run without arguments to get a local build:
 #
 # nix-build
-#
-# A checkout of the general platform docs may be passed to get backreferences
-# right, e.g.:
-# --arg platformDoc '{ outPath = path/to/doc; gitTag = ""; revCount = ""; shortRev = ""; }'
 
 { pkgs ? import <nixpkgs> {}
 , lib ? pkgs.lib
 , branch ? "21.05"
 , updated ? "1970-01-01 01:00"
-, platformDoc ? null # directory/URL containing platform objects.inv
 , failOnWarnings ? false
 }:
 
@@ -25,7 +20,7 @@ in pkgs.stdenv.mkDerivation rec {
   version = "${branch}-${builtins.substring 0 10 updated}";
   src = pkgs.lib.cleanSource ./.;
 
-  inherit branch updated platformDoc;
+  inherit branch updated;
 
   configurePhase = ":";
   buildInputs = [ buildEnv ] ++ (with pkgs; [ python3 git ]);

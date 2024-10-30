@@ -43,7 +43,7 @@ How do I perform a basic setup?
 -------------------------------
 
 First, you need public IPv4 and IPv6 addresses for your mail server's frontend
-interface. Contact :ref:`support` if you don't have. Then, pick a mail host name
+interface. Contact support if you don't have. Then, pick a mail host name
 which will be advertised as MX name on your mail domain. This host name (called
 **mailHost** from here on) must resolve to the FE addresses with both forward
 and reverse lookups.
@@ -59,7 +59,7 @@ Note that it is not possible to set both imprintUrl and imprintText and imprint 
 .. warning::
 
   Incorrect DNS setup is the most frequent source of delivery problems. Let our
-  :ref:`support` check your setup if in doubt.
+  support check your setup if in doubt.
 
 Create a configuration file :file:`/etc/local/mail/config.json` which contains
 all the basic pieces. In the following example, the server's mailHost is

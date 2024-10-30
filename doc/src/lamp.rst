@@ -193,7 +193,7 @@ activated as usual using:
 Network
 -------
 
-The Apache server listens on the :ref:`srv interface <logical_networks>` only.
+The Apache server listens on the srv interface only.
 
 Security
 --------

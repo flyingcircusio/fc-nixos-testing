@@ -812,7 +812,7 @@ jobs // {
 
   releaseSmall = mkRelease {
     releaseName = "releaseSmall";
-    constituents = [ 
+    constituents = [
       "channels"
       # "Basic tests required for all machines are green.";
       "jobs.tests.audit"

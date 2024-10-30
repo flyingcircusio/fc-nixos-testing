@@ -2,9 +2,22 @@
 
 ## Release process
 
-Impact:
+- [ ] Created changelog entry using `./changelog.sh`
 
-Changelog:
+
+## PR release workflow (internal)
+
+- [ ] PR has internal ticket
+- [ ] internal issue ID (PL-…) part of branch name
+- [ ] internal issue ID mentioned in PR description text
+- [ ] ticket is on Platform agile board
+- [ ] ticket state set to *Pull request ready*
+- [ ] if ticket is more urgent than within the next few days, directly contact a member of the Platform team
+
+## Design notes
+
+- [ ] Provide a feature toggle if the change might need to be adjusted/reverted quickly depending on context. Consider whether the default should be `on` or `off`. Example: rate limiting.
+- [ ] All customer-facing features and (NixOS) options need to be discoverable from documentation. Add or update relevant documentation such that hosted and guided customers can understand it as well.
 
 ## Security implications
 

@@ -39,7 +39,7 @@ CHANGELOG=changelog.d/CHANGELOG.md
 truncate -s 0 $TEMP_CHANGELOG
 scriv collect --add
 sed -e "s/^## Impact/## Impact\n### $nixos_version/" \
-    -e "s/^## NixOS platform/## NixOS $nixos_version platform/" $TEMP_CHANGELOG > ../doc/changelog.d/"$nixos_version".md
+    -e "s/^## NixOS XX.XX platform/## NixOS $nixos_version platform/" $TEMP_CHANGELOG > ../doc/changelog.d/"$nixos_version".md
 echo -e "\n" >> $TEMP_CHANGELOG
 cat $CHANGELOG >> $TEMP_CHANGELOG
 (echo "# Release $releaseid"; cat $TEMP_CHANGELOG) > $CHANGELOG

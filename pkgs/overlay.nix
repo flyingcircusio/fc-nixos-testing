@@ -448,7 +448,7 @@ in {
     ];
   });
 
-  openssh_9_6 = super.openssh.overrideAttrs(old_ssh: rec {
+  openssh_9_6 = super.openssh.overrideAttrs (old_ssh: rec {
     version = "9.6p1";
     name = "openssh-${version}";
 
@@ -548,6 +548,8 @@ in {
 
   remarshal = super.callPackage ./remarshal.nix { };
   rum = super.callPackage ./postgresql/rum { };
+
+  scriv = nixpkgs-23_05.scriv;
 
   sensu = super.callPackage ./sensu { ruby = super.ruby_2_6; };
   sensu-plugins-elasticsearch = super.callPackage ./sensuplugins-rb/sensu-plugins-elasticsearch { };

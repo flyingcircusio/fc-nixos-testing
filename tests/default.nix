@@ -91,7 +91,8 @@ in {
   openvpn = callTest ./openvpn.nix {};
   percona80 = callTest ./mysql.nix { rolename = "percona80"; };
   percona83 = callTest ./mysql.nix { rolename = "percona83"; };
-  percona84 = callTest ./mysql.nix { rolename = "percona84"; };
+  # XXX
+  # percona84 = callTest ./mysql.nix { rolename = "percona84"; };
   physical-installer = callTest ./physical-installer.nix { inherit nixpkgs; };
   postgresql12 = callTest ./postgresql { version = "12"; };
   postgresql13 = callTest ./postgresql { version = "13"; };

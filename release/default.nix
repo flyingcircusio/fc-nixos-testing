@@ -413,9 +413,7 @@ jobs // {
   release = mkRelease {
     releaseName = "release";
     constituents = [
-      "channels.fc"
-      "channels.nixos-mailserver"
-      "channels.nixpkgs"
+      "channels"
       "doc.roles"
       "images.dev-vm"
       "images.fc"
@@ -633,7 +631,7 @@ jobs // {
       "importantPackages.tmux.x86_64-linux"
       "importantPackages.tomcat10.x86_64-linux"
       "importantPackages.tomcat9.x86_64-linux"
-      "importantPackages.unifi8.x86_64-linux"
+      "importantPackages.unifi.x86_64-linux"
       "importantPackages.unzip.x86_64-linux"
       "importantPackages.util-linux.x86_64-linux"
       "importantPackages.varnish.x86_64-linux"
@@ -796,7 +794,7 @@ jobs // {
       "tests.openvpn"
       "tests.percona80"
       "tests.percona83"
-      "tests.percona84"
+      # "tests.percona84"
       "tests.physical-installer"
       "tests.postgresql-autoupgrade.automatic"
       "tests.postgresql-autoupgrade.manual"

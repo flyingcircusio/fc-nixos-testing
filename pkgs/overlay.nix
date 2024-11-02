@@ -376,7 +376,8 @@ builtins.mapAttrs (_: patchPhps phpLogPermissionPatch) {
     protobuf = self.protobuf_21;
   };
   # assertion notifies us about the need to vendor the old innovation releases
-  percona84 = assert super.percona-server_innovation.mysqlVersion == "8.4"; super.percona-server_8_4;
+  # XXX
+  # percona84 = assert super.percona-server_innovation.mysqlVersion == "8.4"; super.percona-server_8_4;
 
   percona-xtrabackup_2_4 = super.callPackage ./percona-xtrabackup/2_4/2_4.nix {
     boost = self.boost159;
@@ -384,7 +385,7 @@ builtins.mapAttrs (_: patchPhps phpLogPermissionPatch) {
   };
   # EOL, but we vendor it throughout the 24.05 release cycle
   percona-xtrabackup_8_3 = self.callPackage ./percona-xtrabackup/8_3/innovation.nix { };
-  percona-xtrabackup_8_4 = super.percona-xtrabackup_8_4;
+  # percona-xtrabackup_8_4 = super.percona-xtrabackup_8_4;
 
   # Has been renamed upstream, backy-extract still wants to use it.
   pkgconfig = super.pkg-config;

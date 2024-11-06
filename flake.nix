@@ -67,6 +67,13 @@
             };
           };
 
+        apps.buildVersionsJson = {
+          type = "app";
+          program = "${pkgs.writeShellScript "update-versions-json" ''
+            jq < $(nix build .#versionsJson --print-out-paths) > release/versions.json
+          ''}";
+        };
+
         packages = {
           # These are packages that work on all systems.
           # Also see release/flake-part-linux-only-packages.nix
@@ -157,7 +164,7 @@
               '';
 
               build_versions_json.exec = ''
-                jq < $(nix build .#versionsJson --print-out-paths) > release/versions.json
+                nix run .#buildVersionsJson
               '';
 
               build_channels_dir.exec = ''

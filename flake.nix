@@ -73,6 +73,12 @@
             jq < $(nix build .#versionsJson --print-out-paths) > release/versions.json
           ''}";
         };
+        apps.buildPackageVersionsJson = {
+          type = "app";
+          program = "${pkgs.writeShellScript "update-package-versions-json" ''
+            jq < $(nix build .#packageVersions --print-out-paths) > release/package-versions.json
+          ''}";
+        };
 
         packages = {
           # These are packages that work on all systems.
@@ -160,7 +166,7 @@
               # only build this script on Linux. It just produces an error
               # message on Non-Linux because packageVersions is missing.
               build_package_versions_json.exec = ''
-                jq < $(nix build .#packageVersions --print-out-paths) > release/package-versions.json
+                nix run .#buildPackageVersionsJson
               '';
 
               build_versions_json.exec = ''

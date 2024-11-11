@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
 """
-release/update-nixpkgs.py is designed to be used by a release manager by hand.
-This is some experimentation to allow more automation. In the end we want to merge
-both together I guess.
-
 Desired workflow:
 * get executed in a given interval (e.g. daily - channel bumps are happening approximately every other day)
 * pull latest release into fc fork (rebase strategy)
@@ -45,6 +41,8 @@ from github import Github, Auth
 NIXOS_VERSION_PATH = "release/nixos-version"
 PACKAGE_VERSIONS_PATH = "release/package-versions.json"
 VERSIONS_PATH = "release/versions.json"
+FC_NIXOS_REPO = "flyingcircusio/fc-nixos-testing"
+NIXPKGS_REPO = "flyingcircusio/nixpkgs-testing"
 
 
 @dataclass
@@ -99,9 +97,6 @@ def rebase_nixpkgs(nixpkgs_repo: Repo, branch_to_rebase: str, integration_branch
         try:
             nixpkgs_repo.git.rebase(f"upstream/{branch_to_rebase}")
         except GitCommandError as e:
-            warning(f'Rebase failed:\n{e.stderr}')
-            nixpkgs_repo.git.rebase(abort=True)
-            warning("Aborted rebase.")
             return None
 
         nixpkgs_repo.git.push("origin", integration_branch, force=True)
@@ -131,7 +126,7 @@ def update_fc_nixos(target_branch: str, integration_branch: str, new_hex_sha: st
         "lock",
         "--override-input",
         "nixpkgs",
-        f"github:flyingcircusio/nixpkgs-testing/{integration_branch}"
+        f"github:{NIXPKGS_REPO}/{new_hex_sha}"
     ])
     check_output(["nix", "run", ".#buildVersionsJson"]).decode('utf-8')
     repo.git.add(["flake.lock", VERSIONS_PATH])
@@ -142,11 +137,11 @@ def update_fc_nixos(target_branch: str, integration_branch: str, new_hex_sha: st
 def create_fc_nixos_pr(target_branch:str, integration_branch: str, github_access_token: str, now: str):
     info(f"Create PR in fc-nixos.")
     gh = Github(auth=Auth.Token(github_access_token))
-    fc_nixos_repo = gh.get_repo("flyingcircusio/fc-nixos-testing")
-    fc_nixos_repo.create_pull(base=target_branch, head=integration_branch, title=f"Auto update nixpkgs {now}", description=f"""\
+    fc_nixos_repo = gh.get_repo(FC_NIXOS_REPO)
+    fc_nixos_repo.create_pull(base=target_branch, head=integration_branch, title=f"Auto update nixpkgs {now}", body=f"""\
 View nixpkgs update branch: [{integration_branch}](https://github.com/flyingcircusio/nixpkgs/tree/{integration_branch})
-
 """)
+
 
 def main():
     basicConfig(level=INFO)
@@ -164,7 +159,7 @@ def main():
         raise Exception("Missing `GH_TOKEN` environment variable.")
 
     now = datetime.date.today().isoformat()
-    integration_branch = f"auto-update/{args.target_branch}/{now}"
+    integration_branch = f"nixpkgs-auto-update/{args.target_branch}/{now}"
 
     nixpkgs_repo = nixpkgs_repository(args.nixpkgs_dir, args.nixpkgs_upstream_url, args.nixpkgs_origin_url, args.nixpkgs_target_branch)
     if result := rebase_nixpkgs(nixpkgs_repo, args.nixpkgs_target_branch, integration_branch):

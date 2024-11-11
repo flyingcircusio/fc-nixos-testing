@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
 """
-release/update-nixpkgs.py is designed to be used by a release manager by hand.
-This is some experimentation to allow more automation. In the end we want to merge
-both together I guess.
-
 Desired workflow:
 * get executed in a given interval (e.g. daily - channel bumps are happening approximately every other day)
 * pull latest release into fc fork (rebase strategy)
@@ -33,18 +29,20 @@ import datetime
 import os
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from logging import info, warning, basicConfig, INFO
+from logging import INFO, basicConfig, info, warning
 from os import path
 from pathlib import Path
 from subprocess import check_output
 
-from git import Repo, Commit
+from git import Commit, Repo
 from git.exc import GitCommandError
-from github import Github, Auth
+from github import Auth, Github
 
 NIXOS_VERSION_PATH = "release/nixos-version"
 PACKAGE_VERSIONS_PATH = "release/package-versions.json"
 VERSIONS_PATH = "release/versions.json"
+FC_NIXOS_REPO = "flyingcircusio/fc-nixos-testing"
+NIXPKGS_REPO = "flyingcircusio/nixpkgs-testing"
 
 
 @dataclass
@@ -61,7 +59,9 @@ class NixpkgsRebaseResult:
     fork_after_rebase: Commit
 
 
-def nixpkgs_repository(directory: str, upstream: str, origin: str, branch: str) -> Repo:
+def nixpkgs_repository(
+    directory: str, upstream: str, origin: str, branch: str
+) -> Repo:
     info("Updating nixpkgs repository.")
     if path.exists(directory):
         repo = Repo(directory)
@@ -80,28 +80,35 @@ def nixpkgs_repository(directory: str, upstream: str, origin: str, branch: str) 
     return repo
 
 
-def rebase_nixpkgs(nixpkgs_repo: Repo, branch_to_rebase: str, integration_branch: str) -> NixpkgsRebaseResult | None:
+def rebase_nixpkgs(
+    nixpkgs_repo: Repo, branch_to_rebase: str, integration_branch: str
+) -> NixpkgsRebaseResult | None:
     info(f"Trying to rebase nixpkgs repository.")
     if nixpkgs_repo.is_dirty():
         raise Exception("Repository is dirty!")
 
     if not any(integration_branch == head.name for head in nixpkgs_repo.heads):
-        tracking_branch = nixpkgs_repo.create_head(integration_branch, f"origin/{branch_to_rebase}")
+        tracking_branch = nixpkgs_repo.create_head(
+            integration_branch, f"origin/{branch_to_rebase}"
+        )
         tracking_branch.checkout()
     else:
         nixpkgs_repo.git.checkout(integration_branch)
 
     latest_upstream = nixpkgs_repo.refs[f"upstream/{branch_to_rebase}"].commit
-    common_grounds = nixpkgs_repo.merge_base(f"upstream/{branch_to_rebase}", "HEAD")
-    if all(latest_upstream.hexsha != commit.hexsha for commit in common_grounds):
-        info(f"Latest commit of {branch_to_rebase} is '{latest_upstream.hexsha}' which is not part of our fork, rebasing.")
+    common_grounds = nixpkgs_repo.merge_base(
+        f"upstream/{branch_to_rebase}", "HEAD"
+    )
+    if all(
+        latest_upstream.hexsha != commit.hexsha for commit in common_grounds
+    ):
+        info(
+            f"Latest commit of {branch_to_rebase} is '{latest_upstream.hexsha}' which is not part of our fork, rebasing."
+        )
         current_state = nixpkgs_repo.head.commit
         try:
             nixpkgs_repo.git.rebase(f"upstream/{branch_to_rebase}")
         except GitCommandError as e:
-            warning(f'Rebase failed:\n{e.stderr}')
-            nixpkgs_repo.git.rebase(abort=True)
-            warning("Aborted rebase.")
             return None
 
         nixpkgs_repo.git.push("origin", integration_branch, force=True)
@@ -110,52 +117,85 @@ def rebase_nixpkgs(nixpkgs_repo: Repo, branch_to_rebase: str, integration_branch
             upstream_commit=latest_upstream,
             fork_commit=nixpkgs_repo.refs[f"origin/{branch_to_rebase}"].commit,
             fork_before_rebase=current_state,
-            fork_after_rebase=nixpkgs_repo.head.commit
+            fork_after_rebase=nixpkgs_repo.head.commit,
         )
 
     info("Nothing to do.")
 
 
-def update_fc_nixos(target_branch: str, integration_branch: str, new_hex_sha: str):
+def update_fc_nixos(
+    target_branch: str, integration_branch: str, new_hex_sha: str
+):
     info(f"Update fc-nixos.")
     repo = Repo(Path.cwd())
     if not any(integration_branch == head.name for head in repo.heads):
-        tracking_branch = repo.create_head(integration_branch, f"origin/{target_branch}")
+        tracking_branch = repo.create_head(
+            integration_branch, f"origin/{target_branch}"
+        )
         tracking_branch.checkout()
     else:
         repo.git.checkout(integration_branch)
 
-    check_output([
-        "nix",
-        "flake",
-        "lock",
-        "--override-input",
-        "nixpkgs",
-        f"github:flyingcircusio/nixpkgs-testing/{integration_branch}"
-    ])
-    check_output(["nix", "run", ".#buildVersionsJson"]).decode('utf-8')
-    repo.git.add(["flake.lock", VERSIONS_PATH])
+    check_output(
+        [
+            "nix",
+            "flake",
+            "lock",
+            "--override-input",
+            "nixpkgs",
+            f"github:{NIXPKGS_REPO}/{new_hex_sha}",
+        ]
+    )
+    check_output(["nix", "run", ".#buildVersionsJson"]).decode("utf-8")
+    check_output(["nix", "run", ".#buildPackageVersionsJson"]).decode("utf-8")
+    repo.git.add(["flake.lock", VERSIONS_PATH, PACKAGE_VERSIONS_PATH])
     repo.git.commit(message=f"Auto update nixpkgs to {new_hex_sha}")
     repo.git.push("origin", integration_branch, force=True)
 
 
-def create_fc_nixos_pr(target_branch:str, integration_branch: str, github_access_token: str, now: str):
+def create_fc_nixos_pr(
+    target_branch: str,
+    integration_branch: str,
+    github_access_token: str,
+    now: str,
+):
     info(f"Create PR in fc-nixos.")
     gh = Github(auth=Auth.Token(github_access_token))
-    fc_nixos_repo = gh.get_repo("flyingcircusio/fc-nixos-testing")
-    fc_nixos_repo.create_pull(base=target_branch, head=integration_branch, title=f"Auto update nixpkgs {now}", description=f"""\
-View nixpkgs update branch: [{integration_branch}](https://github.com/flyingcircusio/nixpkgs/tree/{integration_branch})
+    fc_nixos_repo = gh.get_repo(FC_NIXOS_REPO)
+    fc_nixos_repo.create_pull(
+        base=target_branch,
+        head=integration_branch,
+        title=f"Auto update nixpkgs {now}",
+        body=f"""\
+View nixpkgs update branch: [{integration_branch}](https://github.com/{NIXPKGS_REPO}/tree/{integration_branch})
+""",
+    )
 
-""")
 
 def main():
     basicConfig(level=INFO)
-    argparser = ArgumentParser('nixpkgs updater for fc-nixos')
-    argparser.add_argument("--nixpkgs-dir", help="Directory where the nixpkgs git checkout is in", required=True)
-    argparser.add_argument("--nixpkgs-target-branch", help="Branch to update", required=True)
-    argparser.add_argument("--nixpkgs-upstream-url", help="URL to the upstream nixpkgs repository", required=True)
-    argparser.add_argument("--nixpkgs-origin-url", help="URL to push the nixpkgs updates to", required=True)
-    argparser.add_argument("--target-branch", help="Target branch in fc-nixos", required=True)
+    argparser = ArgumentParser("nixpkgs updater for fc-nixos")
+    argparser.add_argument(
+        "--nixpkgs-dir",
+        help="Directory where the nixpkgs git checkout is in",
+        required=True,
+    )
+    argparser.add_argument(
+        "--nixpkgs-target-branch", help="Branch to update", required=True
+    )
+    argparser.add_argument(
+        "--nixpkgs-upstream-url",
+        help="URL to the upstream nixpkgs repository",
+        required=True,
+    )
+    argparser.add_argument(
+        "--nixpkgs-origin-url",
+        help="URL to push the nixpkgs updates to",
+        required=True,
+    )
+    argparser.add_argument(
+        "--target-branch", help="Target branch in fc-nixos", required=True
+    )
     args = argparser.parse_args()
 
     try:
@@ -164,14 +204,27 @@ def main():
         raise Exception("Missing `GH_TOKEN` environment variable.")
 
     now = datetime.date.today().isoformat()
-    integration_branch = f"auto-update/{args.target_branch}/{now}"
+    integration_branch = f"nixpkgs-auto-update/{args.target_branch}/{now}"
 
-    nixpkgs_repo = nixpkgs_repository(args.nixpkgs_dir, args.nixpkgs_upstream_url, args.nixpkgs_origin_url, args.nixpkgs_target_branch)
-    if result := rebase_nixpkgs(nixpkgs_repo, args.nixpkgs_target_branch, integration_branch):
+    nixpkgs_repo = nixpkgs_repository(
+        args.nixpkgs_dir,
+        args.nixpkgs_upstream_url,
+        args.nixpkgs_origin_url,
+        args.nixpkgs_target_branch,
+    )
+    if result := rebase_nixpkgs(
+        nixpkgs_repo, args.nixpkgs_target_branch, integration_branch
+    ):
         info(f"Updated 'nixpkgs' to '{result.fork_after_rebase.hexsha}'")
-        update_fc_nixos(args.target_branch, integration_branch, result.fork_after_rebase.hexsha)
-        create_fc_nixos_pr(args.target_branch, integration_branch, github_access_token, now)
+        update_fc_nixos(
+            args.target_branch,
+            integration_branch,
+            result.fork_after_rebase.hexsha,
+        )
+        create_fc_nixos_pr(
+            args.target_branch, integration_branch, github_access_token, now
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -108,7 +108,7 @@ builtins.mapAttrs (_: patchPhps phpLogPermissionPatch) {
   });
 
   # PL-131574
-  linuxKernelVerify = let kernelPackage = super.linux_6_10;  in
+  linuxKernelVerify = let kernelPackage = super.linux_6_11;  in
     kernelPackage.override {
           argsOverride = {
             src = super.fetchurl {

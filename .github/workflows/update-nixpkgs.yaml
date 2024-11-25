@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: fc-${{ matrix.version }}-dev
       - uses: cachix/install-nix-action@v21
         with:
           install_url: https://releases.nixos.org/nix/nix-2.18.9/install
@@ -35,11 +33,9 @@ jobs:
           pip install pygithub gitpython
       - run: |
           python ci/update-nixpkgs.py \
-            --target-branch fc-${{ matrix.version }}-dev \
             --nixpkgs-dir ../nixpkgs \
-            --nixpkgs-target-branch nixos-${{ matrix.version }}\
             --nixpkgs-upstream-url https://github.com/NixOS/nixpkgs \
-            --nixpkgs-origin-url https://x-access-token:${{steps.app-token.outputs.token}}@github.com/flyingcircusio/nixpkgs-testing.git
-            --platform-versions 24.05 24.11
+            --nixpkgs-origin-url https://x-access-token:${{steps.app-token.outputs.token}}@github.com/flyingcircusio/nixpkgs-testing.git \
+            --platform-versions 24.05
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

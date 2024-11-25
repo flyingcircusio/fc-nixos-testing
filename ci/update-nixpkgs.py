@@ -29,7 +29,7 @@ import datetime
 import os
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from logging import INFO, basicConfig, info, warning
+from logging import INFO, basicConfig, debug, info, warning
 from os import path
 from pathlib import Path
 from subprocess import check_output
@@ -60,29 +60,47 @@ class NixpkgsRebaseResult:
     fork_after_rebase: Commit
 
 
-def nixpkgs_repository(
-    directory: str, upstream: str, origin: str, branch: str
-) -> Repo:
+@dataclass
+class Remote:
+    url: str
+    branches: list[str]
+
+
+def nixpkgs_repository(directory: str, remotes: dict[str, Remote]) -> Repo:
     info("Updating nixpkgs repository.")
     if path.exists(directory):
         repo = Repo(directory)
     else:
         repo = Repo.init(directory, mkdir=True)
 
-    for name, url in dict(origin=origin, upstream=upstream).items():
+    for name, remote in remotes.items():
         info(f"Updating nixpkgs repository remote `{name}`.")
-        if name in repo.remotes and repo.remotes[name].url != url:
+        if name in repo.remotes and repo.remotes[name].url != remote.url:
             repo.delete_remote(repo.remote(name))
         if name not in repo.remotes:
-            repo.create_remote(name, url)
+            repo.create_remote(name, remote.url)
 
-        getattr(repo.remotes, name).fetch(refspec=branch, filter="blob:none")
+        for branch in remote.branches:
+            info(
+                f"Fetching nixpkgs repository remote `{name}` - branch `{branch}`."
+            )
+            # Ignore errors. This is intended as the last day integration branch may not exist
+            try:
+                getattr(repo.remotes, name).fetch(
+                    refspec=branch, filter="blob:none"
+                )
+            except GitCommandError as e:
+                debug("Error while fetching branch ", e)
+                pass
 
     return repo
 
 
 def rebase_nixpkgs(
-    nixpkgs_repo: Repo, branch_to_rebase: str, integration_branch: str
+    nixpkgs_repo: Repo,
+    branch_to_rebase: str,
+    integration_branch: str,
+    last_day_integration_branch: str,
 ) -> NixpkgsRebaseResult | None:
     info(f"Trying to rebase nixpkgs repository.")
     if nixpkgs_repo.is_dirty():
@@ -100,6 +118,7 @@ def rebase_nixpkgs(
     common_grounds = nixpkgs_repo.merge_base(
         f"upstream/{branch_to_rebase}", "HEAD"
     )
+
     if all(
         latest_upstream.hexsha != commit.hexsha for commit in common_grounds
     ):
@@ -111,6 +130,18 @@ def rebase_nixpkgs(
             nixpkgs_repo.git.rebase(f"upstream/{branch_to_rebase}")
         except GitCommandError as e:
             return None
+
+        # Check if there are new commits compared to the last day's integration branch.
+        if f"origin/{last_day_integration_branch}" in nixpkgs_repo.refs:
+            diff_index = nixpkgs_repo.git.diff_index(
+                f"origin/{last_day_integration_branch}"
+            )
+
+            if diff_index == "":
+                info(
+                    "No changes compared to the last day's integration branch. Not creating a new PR."
+                )
+                return None
 
         nixpkgs_repo.git.push("origin", integration_branch, force=True)
 
@@ -125,7 +156,10 @@ def rebase_nixpkgs(
 
 
 def update_fc_nixos(
-    target_branch: str, integration_branch: str, previous_hex_sha: str, new_hex_sha: str
+    target_branch: str,
+    integration_branch: str,
+    previous_hex_sha: str,
+    new_hex_sha: str,
 ):
     info(f"Update fc-nixos.")
     repo = Repo(Path.cwd())
@@ -150,14 +184,26 @@ def update_fc_nixos(
     check_output(["nix", "run", ".#buildVersionsJson"]).decode("utf-8")
     check_output(["nix", "run", ".#buildPackageVersionsJson"]).decode("utf-8")
 
-    changelog_path = Path(CHANGELOG_DIR) / f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_nixpkgs-auto-update-{target_branch}.md"
-    changelog_path.write_text(f"""
+    changelog_path = (
+        Path(CHANGELOG_DIR)
+        / f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_nixpkgs-auto-update-{target_branch}.md"
+    )
+    changelog_path.write_text(
+        f"""
 ### NixOS XX.XX platform
 
 - Update nixpkgs from {previous_hex_sha} to {new_hex_sha}
-""")
+"""
+    )
 
-    repo.git.add(["flake.lock", VERSIONS_PATH, PACKAGE_VERSIONS_PATH, str(changelog_path)])
+    repo.git.add(
+        [
+            "flake.lock",
+            VERSIONS_PATH,
+            PACKAGE_VERSIONS_PATH,
+            str(changelog_path),
+        ]
+    )
     repo.git.commit(message=f"Auto update nixpkgs to {new_hex_sha}")
     repo.git.push("origin", integration_branch, force=True)
 
@@ -200,7 +246,10 @@ def main():
         required=True,
     )
     argparser.add_argument(
-        "--platform-versions", help="Platform versions", required=True, nargs="+"
+        "--platform-versions",
+        help="Platform versions",
+        required=True,
+        nargs="+",
     )
     args = argparser.parse_args()
 
@@ -209,22 +258,37 @@ def main():
     except KeyError:
         raise Exception("Missing `GH_TOKEN` environment variable.")
 
-    now = datetime.date.today().isoformat()
+    today = datetime.date.today().isoformat()
+    yesterday = (
+        datetime.date.today() - datetime.timedelta(days=1)
+    ).isoformat()
 
     for platform_version in args.platform_versions:
         info(f"Updating platform {platform_version}")
         nixpkgs_target_branch = f"nixos-{platform_version}"
         fc_nixos_target_branch = f"fc-{platform_version}-dev"
-        integration_branch = f"nixpkgs-auto-update/{fc_nixos_target_branch}/{now}"
-
-        nixpkgs_repo = nixpkgs_repository(
-            args.nixpkgs_dir,
-            args.nixpkgs_upstream_url,
-            args.nixpkgs_origin_url,
-            nixpkgs_target_branch,
+        integration_branch = (
+            f"nixpkgs-auto-update/{fc_nixos_target_branch}/{today}"
         )
+        last_day_integration_branch = (
+            f"nixpkgs-auto-update/{fc_nixos_target_branch}/{yesterday}"
+        )
+
+        remotes = {
+            "upstream": Remote(
+                args.nixpkgs_upstream_url, [nixpkgs_target_branch]
+            ),
+            "origin": Remote(
+                args.nixpkgs_origin_url,
+                [nixpkgs_target_branch, last_day_integration_branch],
+            ),
+        }
+        nixpkgs_repo = nixpkgs_repository(args.nixpkgs_dir, remotes)
         if result := rebase_nixpkgs(
-            nixpkgs_repo, nixpkgs_target_branch, integration_branch
+            nixpkgs_repo,
+            nixpkgs_target_branch,
+            integration_branch,
+            last_day_integration_branch,
         ):
             info(f"Updated 'nixpkgs' to '{result.fork_after_rebase.hexsha}'")
             update_fc_nixos(
@@ -234,7 +298,10 @@ def main():
                 result.fork_after_rebase.hexsha,
             )
             create_fc_nixos_pr(
-                fc_nixos_target_branch, integration_branch, github_access_token, now
+                fc_nixos_target_branch,
+                integration_branch,
+                github_access_token,
+                today,
             )
 
 

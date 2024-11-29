@@ -1,0 +1,29 @@
+name: "Check risk/urgency labels"
+on:
+  pull_request_target:
+    types: [labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  action:
+    name: check-risk-urgency-labels
+    permissions:
+      statuses: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check whether the PR has risk and urgency labels"
+        run: |
+          gh api /repos/flyingcircusio/fc-nixos-testing/pulls/${{ github.event.number }} | jq -e '
+            .labels | {
+                  risk: (. | map(select(.name | startswith("risk:")))),
+                  urgency: (. | map(select(.name | startswith("urgency:"))))
+                }
+              | map_values(select(. | length != 1)) | keys
+              | if length == 0 then
+                "Risk and urgency labels are set."
+                else error("Label(s) " + (. | join(",")) + " not correctly set")
+                end'
+        env:
+          GH_TOKEN: ${{ github.token }}

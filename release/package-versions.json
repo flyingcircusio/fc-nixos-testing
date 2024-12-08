@@ -70,14 +70,14 @@
     "version": "18.2.4"
   },
   "chromedriver": {
-    "name": "chromedriver-unwrapped-131.0.6778.85",
+    "name": "chromedriver-unwrapped-131.0.6778.108",
     "pname": "chromedriver-unwrapped",
-    "version": "131.0.6778.85"
+    "version": "131.0.6778.108"
   },
   "chromium": {
-    "name": "chromium-131.0.6778.85",
+    "name": "chromium-131.0.6778.108",
     "pname": "chromium",
-    "version": "131.0.6778.85"
+    "version": "131.0.6778.108"
   },
   "cifs-utils": {
     "name": "cifs-utils-7.0",
@@ -495,9 +495,9 @@
     "version": "3.3.5"
   },
   "mastodon": {
-    "name": "mastodon-4.2.13",
+    "name": "mastodon-4.2.14",
     "pname": "mastodon",
-    "version": "4.2.13"
+    "version": "4.2.14"
   },
   "matomo": {
     "name": "matomo-4.16.1",
@@ -510,9 +510,9 @@
     "version": "5.1.1"
   },
   "matrix-synapse": {
-    "name": "matrix-synapse-wrapped-1.120.0",
+    "name": "matrix-synapse-wrapped-1.120.2",
     "pname": "matrix-synapse-wrapped",
-    "version": "1.120.0"
+    "version": "1.120.2"
   },
   "mcpp": {
     "name": "mcpp-2.7.2.1",

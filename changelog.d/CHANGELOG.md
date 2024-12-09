@@ -9,11 +9,9 @@
 
 - Activate DDoS SSH rules in fail2ban for production machines.
 
-## NixOS 24.05 platform
+## NixOS XX.XX platform
 
 - agent: fix merging cold boot activities into warm reboots. We noticed maintenance requests that have been postponed multiple times on some machines, causing repeated maintenance notification mails. (PL-133180).
-
-## NixOS XX.XX platform
 
 - Increase SSL validation check timeout to better distinguish DNS resolution
   errors and other causes of timeouts. (PL-133125)

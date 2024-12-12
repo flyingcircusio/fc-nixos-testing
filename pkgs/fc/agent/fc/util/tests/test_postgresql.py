@@ -1,4 +1,5 @@
 import json
+from typing import List
 from unittest.mock import Mock
 
 import fc.manage.postgresql

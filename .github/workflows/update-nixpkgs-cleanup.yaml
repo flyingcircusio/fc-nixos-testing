@@ -1,7 +1,7 @@
 name: update-nixpkgs-cleanup
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - closed
 
@@ -12,7 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: flyingcircusio/fc-nixos-release-tools
+          path: 'fc-nixos'
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: flyingcircusio/fc-nixos-release-tools-testing
           path: 'release-tools'
       - uses: cachix/install-nix-action@v21
         with:
@@ -40,7 +44,9 @@ jobs:
       - run: |
           ./result/bin/update-nixpkgs cleanup \
             --merged-pr-id ${{ github.event.number }} \
+            --fc-nixos-dir fc-nixos \
             --nixpkgs-dir nixpkgs \
-            --nixpkgs-origin-url https://x-access-token:${{steps.app-token.outputs.token}}@github.com/flyingcircusio/nixpkgs.git
+            --nixpkgs-origin-url https://x-access-token:${{steps.app-token.outputs.token}}@github.com/flyingcircusio/nixpkgs-testing.git
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MATRIX_HOOKSHOT_URL: ${{ secrets.MATRIX_HOOKSHOT_URL }}

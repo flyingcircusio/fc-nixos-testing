@@ -70,14 +70,14 @@
     "version": "18.2.4"
   },
   "chromedriver": {
-    "name": "chromedriver-unwrapped-131.0.6778.108",
+    "name": "chromedriver-unwrapped-131.0.6778.139",
     "pname": "chromedriver-unwrapped",
-    "version": "131.0.6778.108"
+    "version": "131.0.6778.139"
   },
   "chromium": {
-    "name": "chromium-131.0.6778.108",
+    "name": "chromium-131.0.6778.139",
     "pname": "chromium",
-    "version": "131.0.6778.108"
+    "version": "131.0.6778.139"
   },
   "cifs-utils": {
     "name": "cifs-utils-7.0",
@@ -190,9 +190,9 @@
     "version": "7.17.16"
   },
   "firefox": {
-    "name": "firefox-133.0",
+    "name": "firefox-133.0.3",
     "pname": "firefox",
-    "version": "133.0"
+    "version": "133.0.3"
   },
   "gcc": {
     "name": "gcc-wrapper-13.2.0",
@@ -220,9 +220,9 @@
     "version": "2.44.2"
   },
   "gitaly": {
-    "name": "gitaly-17.5.3",
+    "name": "gitaly-17.5.4",
     "pname": "gitaly",
-    "version": "17.5.3"
+    "version": "17.5.4"
   },
   "github-runner": {
     "name": "github-runner-2.321.0",
@@ -230,9 +230,9 @@
     "version": "2.321.0"
   },
   "gitlab": {
-    "name": "gitlab-17.5.3",
+    "name": "gitlab-17.5.4",
     "pname": "gitlab",
-    "version": "17.5.3"
+    "version": "17.5.4"
   },
   "gitlab-container-registry": {
     "name": "gitlab-container-registry-4.14.0",
@@ -240,14 +240,14 @@
     "version": "4.14.0"
   },
   "gitlab-ee": {
-    "name": "gitlab-ee-17.5.3",
+    "name": "gitlab-ee-17.5.4",
     "pname": "gitlab-ee",
-    "version": "17.5.3"
+    "version": "17.5.4"
   },
   "gitlab-pages": {
-    "name": "gitlab-pages-17.5.3",
+    "name": "gitlab-pages-17.5.4",
     "pname": "gitlab-pages",
-    "version": "17.5.3"
+    "version": "17.5.4"
   },
   "gitlab-runner": {
     "name": "gitlab-runner-17.1.0",
@@ -255,9 +255,9 @@
     "version": "17.1.0"
   },
   "gitlab-workhorse": {
-    "name": "gitlab-workhorse-17.5.3",
+    "name": "gitlab-workhorse-17.5.4",
     "pname": "gitlab-workhorse",
-    "version": "17.5.3"
+    "version": "17.5.4"
   },
   "glibc": {
     "name": "glibc-2.39-52",
@@ -290,9 +290,9 @@
     "version": "1.22.8"
   },
   "grafana": {
-    "name": "grafana-10.4.13",
+    "name": "grafana-10.4.14",
     "pname": "grafana",
-    "version": "10.4.13"
+    "version": "10.4.14"
   },
   "grub2": {
     "name": "grub-2.12",
@@ -505,14 +505,14 @@
     "version": "4.16.1"
   },
   "matomo_5": {
-    "name": "matomo_5-5.1.1",
+    "name": "matomo_5-5.1.2",
     "pname": "matomo_5",
-    "version": "5.1.1"
+    "version": "5.1.2"
   },
   "matrix-synapse": {
-    "name": "matrix-synapse-wrapped-1.120.2",
+    "name": "matrix-synapse-wrapped-1.121.1",
     "pname": "matrix-synapse-wrapped",
-    "version": "1.120.2"
+    "version": "1.121.1"
   },
   "mcpp": {
     "name": "mcpp-2.7.2.1",

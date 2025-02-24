@@ -2,7 +2,7 @@ name: "Check auto-mergeability of PR"
 on:
   # use pull_request_target to also run on PRs with merge conflict
   pull_request_target:
-    types: [labeled, unlabeled, ready_for_review]
+    types: [labeled, unlabeled, ready_for_review, opened]
   pull_request_review:
     types: [submitted, dismissed]
 

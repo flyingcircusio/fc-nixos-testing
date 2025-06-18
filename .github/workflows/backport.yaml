@@ -44,4 +44,6 @@ jobs:
           copy_labels_pattern: '(risk|urgency): \d'
           github_token: ${{ steps.app-token.outputs.token }}
           pull_description: |-
-            Bot-based backport to `${target_branch}`, triggered by a label in #${pull_number}.
+            Bot-based backport to `${target_branch}`, triggered by a label in #${pull_number}. Original body:
+            
+            ${pull_description}
